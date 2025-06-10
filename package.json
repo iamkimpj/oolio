@@ -1,0 +1,45 @@
+{
+  "name": "oolio",
+  "version": "0.1.6",
+  "description": "A universal API client library",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "npm run clean && npm run tsc && node build.js",
+    "clean": "rm -rf dist",
+    "prepare": "npm run build",
+    "tsc": "tsc"
+  },
+  "keywords": [
+    "api",
+    "client",
+    "http",
+    "request",
+    "rest",
+    "fetch",
+    "axios"
+  ],
+  "author": "oollab",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "esbuild": "^0.19.12",
+    "typescript": "^5.8.3"
+  }
+}
