@@ -14,14 +14,13 @@
     }
   },
   "files": [
-    "dist",
-    "src"
+    "dist"
   ],
   "scripts": {
-    "build": "npm run clean && npm run tsc && node build.js",
+    "build": "npm run clean && node build.js",
     "clean": "rm -rf dist",
     "prepare": "npm run build",
-    "tsc": "tsc"
+    "dev": "node build.js"
   },
   "keywords": [
     "api",

@@ -1,43 +1,43 @@
-var h=Object.defineProperty;var F=Object.getOwnPropertyDescriptor;var T=Object.getOwnPropertyNames;var x=Object.prototype.hasOwnProperty;var A=(t,e)=>{for(var o in e)h(t,o,{get:e[o],enumerable:!0})},P=(t,e,o,n)=>{if(e&&typeof e=="object"||typeof e=="function")for(let r of T(e))!x.call(t,r)&&r!==o&&h(t,r,{get:()=>e[r],enumerable:!(n=F(e,r))||n.enumerable});return t};var j=t=>P(h({},"__esModule",{value:!0}),t);var C={};A(C,{api:()=>U,default:()=>B});module.exports=j(C);var w=t=>/\/\{[^}]+\}/g.test(t),D=(t=void 0)=>t==null?!1:t.length>0,m=(t=[],e={})=>{let o={};if(Array.isArray(t))for(let n in e)t.indexOf(n)!==-1&&(o[n]=e[n]===void 0||e[n]===null?"":typeof e[n]=="object"?JSON.stringify(e[n]):e[n]);else for(let n in t)if(e[n]!==void 0)o[n]=e[n]==null?"":typeof e[n]=="object"?JSON.stringify(e[n]):e[n];else{let r=t[n];r&&(o[n]=r.defaultValue)}return o},q=(t=[],e=[],o={})=>{let n=new FormData,r=m(t,o);for(let s in r){let u=encodeURIComponent(s),i=encodeURIComponent(r[s]);n.append(u,i)}for(let s in o)e.includes(s)&&n.append(s,o[s]);return n},b=(t=[],e={})=>{let o=m(t,e),n=new FormData;for(let r in o)n.append(r,o[r]);return n},v=(t,e={})=>{if(!t)return console.log("path is undefined"),t;if(!w(t))return t;let o=t;for(let[n,r]of Object.entries(e)){let s=new RegExp(`\\{${n}\\}`,"g");o=o.replace(s,r)}return o},z=(t,e,o={},n={})=>{let r=m({payload:e},o);return fetch(`${t}?${new URLSearchParams(r).toString()}`,{headers:n}).then(s=>s.ok?s.json():s.json().then(u=>{throw{status:s.status,statusText:s.statusText,data:u}}))},O=(t,e,o,n={},r={})=>{let s=b({payload:o},n);return fetch(t,{method:e,headers:r,body:s}).then(u=>u.ok?u.json():u.json().then(i=>{throw{status:u.status,statusText:u.statusText,data:i}}))},N=(t,e,o,n=[],r={},s={})=>{let u=q(o,n,r);return s["Content-Type"]==null&&(s["Content-Type"]="application/x-www-form-urlencoded"),fetch(t,{method:e,headers:s,body:u}).then(i=>i.ok?i.json():i.json().then(a=>{throw{status:i.status,statusText:i.statusText,data:a}}))};function y(t,e){return async function(n={},r=null,s={}){let{method:u,path:i,payload:a=[],baseUrl:f=null,authorization:p=null,files:d=void 0}=this,l=f||t||"http://localhost:3000",c=r;if(w(i)?l=l+v(i,n):(l=l+i,r||(c=n)),p!="guest"&&e){let g=await e();g&&(s.Authorization=`Bearer ${g}`)}return u=="get"?z(l,a,c,s):D(d)?N(l,u,a,d,c,s):O(l,u,a,c,s)}}var R=(()=>{let t=null,e,o,n,r={};function s(){console.warn(`
-    [oolio] routes\uAC00 \uC815\uC758\uB418\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4. routes\uB294 \uB2E4\uC74C\uACFC \uAC19\uC740 \uD615\uC2DD\uC774\uC5B4\uC57C \uD569\uB2C8\uB2E4:
-    
-    const routes = {
-      auth: {
-        login: {
-          method: 'post',
-          path: '/auth/login',
-          payload: ['email', 'password']
-        },
-        register: {
-          method: 'post',
-          path: '/auth/register',
-          payload: ['email', 'password', 'name']
-        }
+"use strict";var c=Object.defineProperty;var w=Object.getOwnPropertyDescriptor;var k=Object.getOwnPropertyNames;var F=Object.prototype.hasOwnProperty;var R=(e,n)=>{for(var r in n)c(e,r,{get:n[r],enumerable:!0})},b=(e,n,r,t)=>{if(n&&typeof n=="object"||typeof n=="function")for(let s of k(n))!F.call(e,s)&&s!==r&&c(e,s,{get:()=>n[s],enumerable:!(t=w(n,s))||t.enumerable});return e};var T=e=>b(c({},"__esModule",{value:!0}),e);var N={};R(N,{default:()=>D});module.exports=T(N);var h=e=>/\/\{[^}]+\}/g.test(e),x=e=>e?e.length>0:!1,g=(e=[],n={})=>{let r={};if(Array.isArray(e))for(let t in n)e.indexOf(t)!==-1&&(r[t]=n[t]===void 0||n[t]===null?"":typeof n[t]=="object"?JSON.stringify(n[t]):n[t]);else for(let t in e)if(n[t]!==void 0)r[t]=n[t]==null?"":typeof n[t]=="object"?JSON.stringify(n[t]):n[t];else{let s=e[t];s&&(r[t]=s.defaultValue)}return r},j=(e=[],n=[],r={})=>{let t=new FormData,s=g(e,r);for(let o in s){let a=encodeURIComponent(o),i=encodeURIComponent(s[o]);t.append(a,i)}for(let o in r)n.includes(o)&&t.append(o,r[o]);return t},v=(e=[],n={})=>{let r=g(e,n),t=new FormData;for(let s in r)t.append(s,r[s]);return t},A=(e,n={})=>{if(!e)return console.log("path is undefined"),e;if(!h(e))return e;let r=e;for(let[t,s]of Object.entries(n)){let o=new RegExp(`\\{${t}\\}`,"g");r=r.replace(o,s)}return r},C=async(e,n,r={},t={})=>{let s=g(n,r),o=await fetch(`${e}?${new URLSearchParams(s).toString()}`,{headers:t});if(!o.ok){let a=await o.json();throw{status:o.status,statusText:o.statusText,data:a}}return o.json()},q=async(e,n,r,t={},s={})=>{let o=v(r,t),a=await fetch(e,{method:n,headers:s,body:o});if(!a.ok){let i=await a.json();throw{status:a.status,statusText:a.statusText,data:i}}return a.json()},O=async(e,n,r,t=[],s={},o={})=>{let a=j(r,t,s);o["Content-Type"]||(o["Content-Type"]="application/x-www-form-urlencoded");let i=await fetch(e,{method:n,headers:o,body:a});if(!i.ok){let l=await i.json();throw{status:i.status,statusText:i.statusText,data:l}}return i.json()};function p(e,n){return async function(t={},s=null,o={}){let{method:a,path:i,payload:l=[],baseUrl:d=null,authorization:P=null,files:y=void 0}=this,u=d||e||"http://localhost:3000",f=s||{};if(h(i)?u=u+A(i,t):(u=u+i,s||(f=t)),P!=="guest"&&n){let m=await n();m&&(o.Authorization=`Bearer ${m}`)}return a==="get"?C(u,l,f,o):x(y)?O(u,a,l,y,f,o):q(u,a,l,f,o)}}function D({routes:e,getAuthorizeToken:n,baseUrl:r}){let t={};return function(){if(e){if(!n){H();return}}else{z();return}for(let o in e){t[o]||(t[o]={});for(let a in e[o])t[o][a]=(...i)=>p(r,n).call(e[o][a],...i)}}(),t}function z(){console.warn(`
+  [oolio] routes\uAC00 \uC815\uC758\uB418\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4. routes\uB294 \uB2E4\uC74C\uACFC \uAC19\uC740 \uD615\uC2DD\uC774\uC5B4\uC57C \uD569\uB2C8\uB2E4:
+  
+  const routes = {
+    auth: {
+      login: {
+        method: 'post',
+        path: '/auth/login',
+        payload: ['email', 'password']
       },
-      user: {
-        getProfile: {
-          method: 'get',
-          path: '/user/profile'
-        },
-        updateProfile: {
-          method: 'put',
-          path: '/user/profile',
-          payload: ['name', 'avatar']
-        },
-        uploadAvatar: {
-          method: 'post',
-          path: '/user/avatar',
-          payload: ['userId'],
-          files: ['avatar']  // \uD30C\uC77C \uC5C5\uB85C\uB4DC \uD544\uB4DC
-        }
+      register: {
+        method: 'post',
+        path: '/auth/register',
+        payload: ['email', 'password', 'name']
       }
-    };
-    
-    \uAC01 \uB77C\uC6B0\uD2B8\uB294 \uB2E4\uC74C \uC18D\uC131\uC744 \uAC00\uC9C8 \uC218 \uC788\uC2B5\uB2C8\uB2E4:
-    - method: HTTP \uBA54\uC18C\uB4DC (get, post, put, delete \uB4F1)
-    - path: API \uC5D4\uB4DC\uD3EC\uC778\uD2B8 \uACBD\uB85C
-    - payload: \uC694\uCCAD\uC5D0 \uD3EC\uD568\uB420 \uB370\uC774\uD130 \uD544\uB4DC \uBAA9\uB85D (\uC120\uD0DD\uC0AC\uD56D)
-    - authorization: \uC778\uC99D \uD544\uC694 \uC5EC\uBD80 (\uAE30\uBCF8\uAC12: true)
-    - files: \uD30C\uC77C \uC5C5\uB85C\uB4DC \uD544\uB4DC \uBAA9\uB85D (\uC120\uD0DD\uC0AC\uD56D)
-    `)}function u(){console.log("getAuthorizeToken is undefined")}function i(){if(e===void 0){s();return}else if(o===void 0){u();return}for(let a in e){r[a]===void 0&&(r[a]={});for(let f in e[a])r[a][f]=(...p)=>y(n,o).call(e[a][f],...p)}}return()=>(t||(t={api:r,routes:a=>(e=a,i(),t),setFnGetAuthorizeToken:a=>(o=a,i(),t),setBaseUrl:a=>(n=a,i(),t)}),t)})(),k=R(),U=k.api,B=k;0&&(module.exports={api});
+    },
+    user: {
+      getProfile: {
+        method: 'get',
+        path: '/user/profile'
+      },
+      updateProfile: {
+        method: 'put',
+        path: '/user/profile',
+        payload: ['name', 'avatar']
+      },
+      uploadAvatar: {
+        method: 'post',
+        path: '/user/avatar',
+        payload: ['userId'],
+        files: ['avatar']  // \uD30C\uC77C \uC5C5\uB85C\uB4DC \uD544\uB4DC
+      }
+    }
+  };
+  
+  \uAC01 \uB77C\uC6B0\uD2B8\uB294 \uB2E4\uC74C \uC18D\uC131\uC744 \uAC00\uC9C8 \uC218 \uC788\uC2B5\uB2C8\uB2E4:
+  - method: HTTP \uBA54\uC18C\uB4DC (get, post, put, delete \uB4F1)
+  - path: API \uC5D4\uB4DC\uD3EC\uC778\uD2B8 \uACBD\uB85C
+  - payload: \uC694\uCCAD\uC5D0 \uD3EC\uD568\uB420 \uB370\uC774\uD130 \uD544\uB4DC \uBAA9\uB85D (\uC120\uD0DD\uC0AC\uD56D)
+  - authorization: \uC778\uC99D \uD544\uC694 \uC5EC\uBD80 (\uAE30\uBCF8\uAC12: true)
+  - files: \uD30C\uC77C \uC5C5\uB85C\uB4DC \uD544\uB4DC \uBAA9\uB85D (\uC120\uD0DD\uC0AC\uD56D)
+  `)}function H(){console.log("getAuthorizeToken is undefined")}
 //# sourceMappingURL=index.cjs.map
