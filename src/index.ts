@@ -1,21 +1,14 @@
-import request from "./request.js";
+import setRequest from "./request.js";
+import type { tpRoute } from "./request.js";
 
-interface Route {
-  method: string;
-  path: string;
-  payload?: string[];
-  files?: string[];
-  authorization?: boolean;
-}
-
-interface Routes {
+interface tpRoutes {
   [category: string]: {
-    [fnName: string]: Route;
+    [fnName: string]: tpRoute;
   };
 }
 
 interface OolioConfig {
-  routes: Routes;
+  routes: tpRoutes;
   getAuthorizeToken: () => string | null;
   baseUrl: string;
 }
@@ -42,8 +35,8 @@ export default function oolio({
       }
       for (const fnName in routes[category]) {
         api[category][fnName] = (...args: any[]) => {
-          const requestFn = request(baseUrl, getAuthorizeToken);
-          return requestFn.call(routes[category][fnName], ...args);
+          const requestFn = setRequest(baseUrl, getAuthorizeToken);
+          return requestFn(routes[category][fnName], ...args);
         };
       }
     }

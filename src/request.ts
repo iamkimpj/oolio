@@ -10,7 +10,7 @@ interface Headers {
   [key: string]: string;
 }
 
-interface RouteConfig {
+export interface tpRoute {
   method: string;
   path: string;
   payload?: string[];
@@ -207,16 +207,13 @@ const runApiWithFiles = async (
   return response.json();
 };
 
-export default function createOolio(
-  _baseUrl: string,
-  getAuthorizeToken: () => string | null
-) {
-  return async function request(
-    this: RouteConfig,
+export default (_baseUrl: string, getAuthorizeToken: () => string | null) => {
+  return async (
+    route: tpRoute,
     pathParams: PathParams = {},
     data: Data | null = null,
     headers: Headers = {}
-  ): Promise<any> {
+  ): Promise<any> => {
     const {
       method,
       path,
@@ -224,7 +221,7 @@ export default function createOolio(
       baseUrl = null,
       authorization = null,
       files = undefined,
-    } = this;
+    } = route;
 
     let url = baseUrl ? baseUrl : _baseUrl ? _baseUrl : "http://localhost:3000";
     let requestData = data || {};
@@ -253,4 +250,4 @@ export default function createOolio(
       return runApi(url, method, payload, requestData, headers);
     }
   };
-}
+};
