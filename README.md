@@ -69,7 +69,7 @@ const updateResult = await api.user.updateProfile({
 });
 ```
 
-### 라우트 설정 옵션
+### 라우트 설정 옵션 예제
 
 ```javascript
 const routes = {
