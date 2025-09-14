@@ -20,7 +20,8 @@
     "build": "npm run clean && node build.js",
     "clean": "rm -rf dist",
     "prepare": "npm run build",
-    "dev": "node build.js"
+    "dev": "node build.js",
+    "test": "npx tsx test.ts"
   },
   "keywords": [
     "api",
