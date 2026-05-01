@@ -8,14 +8,23 @@
 npm install oolio
 ```
 
+## 특징
+
+- 라우트 기반의 API 클라이언트
+- 자동 인증 토큰 처리 (Bearer)
+- 경로 파라미터 지원 (`/user/{userId}`)
+- 파일 업로드 지원 (FormData 자동 처리)
+- 통일된 에러 처리 형식
+- 브라우저 / Node.js 환경 모두 지원
+- TypeScript 제네릭으로 요청/응답 타입 정의 가능
+
 ## 사용법
 
-### 기본 설정
+### JavaScript
 
 ```javascript
 import oolio from "oolio";
 
-// API 라우트 정의
 const routes = {
   auth: {
     login: {
@@ -23,95 +32,132 @@ const routes = {
       path: "/auth/login",
       payload: ["email", "password"],
     },
-    register: {
-      method: "post",
-      path: "/auth/register",
-      payload: ["email", "password", "name"],
-    },
   },
   user: {
     getProfile: {
       method: "get",
       path: "/user/profile",
     },
-    updateProfile: {
+    getUserById: {
+      method: "get",
+      path: "/user/{userId}",
+    },
+    updateUserById: {
       method: "put",
-      path: "/user/profile",
-      payload: ["name", "avatar"],
+      path: "/user/{userId}",
+      payload: ["name", "email"],
     },
-  },
-};
-
-// oolio 클라이언트 초기화
-const api = oolio({
-  routes,
-  getAuthorizeToken: () => localStorage.getItem("token"),
-  baseUrl: "https://api.example.com",
-});
-```
-
-### API 호출
-
-```javascript
-// 로그인 API 호출
-const response = await api.auth.login({
-  email: "test@example.com",
-  password: "1234",
-});
-
-// 프로필 조회
-const profile = await api.user.getProfile();
-
-// 프로필 업데이트
-const updateResult = await api.user.updateProfile({
-  name: "John",
-  avatar: "profile.jpg",
-});
-```
-
-### 라우트 설정 옵션
-
-```javascript
-const routes = {
-  user: {
-    // GET 요청
-    getProfile: {
-      method: "get",
-      path: "/user/profile",
-    },
-
-    // POST 요청 (데이터 전송)
-    updateProfile: {
-      method: "post",
-      path: "/user/profile",
-      payload: ["name", "age"],
-    },
-
-    // 파일 업로드
     uploadAvatar: {
       method: "post",
       path: "/user/avatar",
       payload: ["userId"],
       files: ["avatar"],
     },
-
-    // 경로 파라미터 사용
-    getUser: {
-      method: "get",
-      path: "/user/{userId}",
-    },
-
-    // 인증 불필요
-    publicData: {
-      method: "get",
-      path: "/public/data",
-      authorization: false,
-    },
   },
 };
+
+const api = oolio({
+  routes,
+  getAuthorizeToken: () => localStorage.getItem("token"),
+  baseUrl: "https://api.example.com",
+});
+
+// 일반 요청
+const response = await api.auth.login({
+  email: "test@example.com",
+  password: "1234",
+});
+
+// 경로 파라미터
+const user = await api.user.getUserById({ userId: "123" });
+
+// 경로 파라미터 + payload
+await api.user.updateUserById(
+  { userId: "123" },
+  { name: "John", email: "john@example.com" },
+);
+
+// 파일 업로드
+await api.user.uploadAvatar({ userId: "123", avatar: fileInput.files[0] });
 ```
 
-### 에러 처리
+### TypeScript
+
+`Route<TPayload, TResponse>` 제네릭으로 요청/응답 타입을 정의할 수 있습니다.
+
+```typescript
+import oolio from "oolio";
+import type { Route } from "oolio";
+
+const routes = {
+  auth: {
+    login: {
+      method: "post",
+      path: "/auth/login",
+      payload: ["email", "password"],
+    } as Route<{ email: string; password: string }, { token: string }>,
+  },
+  user: {
+    getProfile: {
+      method: "get",
+      path: "/user/profile",
+    } as Route<void, { name: string; avatar: string }>,
+
+    getUserById: {
+      method: "get",
+      path: "/user/{userId}",
+    } as Route<{ userId: string }, { id: string; name: string }>,
+
+    // 경로 파라미터 + payload 동시 사용
+    // 첫 번째 인자: 경로 파라미터, 두 번째 인자: payload
+    updateUserById: {
+      method: "put",
+      path: "/user/{userId}",
+      payload: ["name", "email"],
+    } as Route<{ name: string; email: string }, { success: boolean }>,
+
+    uploadAvatar: {
+      method: "post",
+      path: "/user/avatar",
+      payload: ["userId"],
+      files: ["avatar"],
+    } as Route<{ userId: string; avatar: File }, { url: string }>,
+  },
+};
+
+const api = oolio({
+  routes,
+  getAuthorizeToken: () => localStorage.getItem("token"),
+  baseUrl: "https://api.example.com",
+});
+
+// 타입 자동 추론
+const { token } = await api.auth.login({
+  email: "test@example.com",
+  password: "1234",
+});
+const { name } = await api.user.getProfile();
+const { id } = await api.user.getUserById({ userId: "123" });
+
+// 경로 파라미터 + payload
+await api.user.updateUserById(
+  { userId: "123" },
+  { name: "John", email: "john@example.com" },
+);
+```
+
+## 라우트 옵션
+
+| 옵션            | 필수 | 설명                                                      |
+| --------------- | ---- | --------------------------------------------------------- |
+| `method`        | O    | HTTP 메소드 (get, post, put, delete 등)                   |
+| `path`          | O    | API 엔드포인트 경로. 경로 파라미터는 `{param}` 형식       |
+| `payload`       | -    | 요청에 포함될 데이터 필드 목록                            |
+| `files`         | -    | 파일 업로드 필드 목록                                     |
+| `authorization` | -    | `false` 또는 `"guest"` 설정 시 토큰 미첨부 (기본값: true) |
+| `baseUrl`       | -    | 라우트별 baseUrl 오버라이드                               |
+
+## 에러 처리
 
 ```javascript
 try {
@@ -120,33 +166,11 @@ try {
     password: "1234",
   });
 } catch (error) {
-  console.error("API Error:", {
-    status: error.status,
-    statusText: error.statusText,
-    data: error.data,
-  });
+  console.error(error.status); // HTTP 상태 코드
+  console.error(error.statusText); // 상태 텍스트
+  console.error(error.data); // 서버 응답 데이터
 }
 ```
-
-## 라우트 설정 옵션
-
-각 라우트는 다음 속성을 가질 수 있습니다:
-
-- `method`: HTTP 메소드 (get, post, put, delete 등)
-- `path`: API 엔드포인트 경로
-- `payload`: 요청에 포함될 데이터 필드 목록 (선택사항)
-- `authorization`: 인증 필요 여부 (기본값: true)
-- `files`: 파일 업로드 필드 목록 (선택사항)
-
-## 특징
-
-- 라우트 기반의 API 클라이언트
-- 자동 인증 토큰 처리
-- 파일 업로드 지원
-- 경로 파라미터 지원
-- FormData를 사용한 데이터 전송
-- 통일된 에러 처리 형식
-- TypeScript 지원
 
 ## 라이센스
 

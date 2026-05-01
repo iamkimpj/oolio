@@ -1,27 +1,10 @@
-interface PathParams {
-  [key: string]: string;
-}
-
-interface Data {
-  [key: string]: any;
-}
-
-interface Headers {
-  [key: string]: string;
-}
-
-export interface tpRoute {
-  method: string;
-  path: string;
-  payload?: string[];
-  baseUrl?: string;
-  authorization?: string | boolean;
-  files?: string[];
-}
-
-interface PayloadDefinition {
-  defaultValue?: any;
-}
+import type {
+  PathParams,
+  Data,
+  Headers,
+  PayloadDefinition,
+  Route,
+} from "./types";
 
 const hasParams = (path: string): boolean => {
   const paramPattern = /\/\{[^}]+\}/g;
@@ -35,7 +18,7 @@ const hasFiles = (fileIndex?: string[]): boolean => {
 
 const convQueryParamsForGet = (
   payload: string[] | { [key: string]: PayloadDefinition } = [],
-  data: Data = {}
+  data: Data = {},
 ): Data => {
   const query: Data = {};
   if (Array.isArray(payload)) {
@@ -45,8 +28,8 @@ const convQueryParamsForGet = (
           data[key] === undefined || data[key] === null
             ? ""
             : typeof data[key] === "object"
-            ? JSON.stringify(data[key])
-            : data[key];
+              ? JSON.stringify(data[key])
+              : data[key];
       }
     }
   } else {
@@ -56,8 +39,8 @@ const convQueryParamsForGet = (
           data[key] == null
             ? ""
             : typeof data[key] === "object"
-            ? JSON.stringify(data[key])
-            : data[key];
+              ? JSON.stringify(data[key])
+              : data[key];
       } else {
         const definition = payload[key];
         if (definition) {
@@ -72,7 +55,7 @@ const convQueryParamsForGet = (
 const getBodyFromDataWithFile = (
   payload: string[] = [],
   fileIndex: string[] = [],
-  data: Data = {}
+  data: Data = {},
 ): FormData => {
   const formData = new FormData();
   const filteredData = convQueryParamsForGet(payload, data);
@@ -115,11 +98,17 @@ const setPath = (path: string, pathParams: PathParams = {}): string => {
     return path;
   }
 
-  // 각 경로 파라미터를 실제 값으로 치환
   let modifiedPath = path;
   for (const [key, value] of Object.entries(pathParams)) {
     const paramPattern = new RegExp(`\\{${key}\\}`, "g");
     modifiedPath = modifiedPath.replace(paramPattern, value);
+  }
+
+  const unresolved = modifiedPath.match(/\{[^}]+\}/g);
+  if (unresolved) {
+    throw new Error(
+      `[oolio] 경로 파라미터가 치환되지 않았습니다: ${unresolved.join(", ")} (path: ${path})`,
+    );
   }
 
   return modifiedPath;
@@ -129,7 +118,7 @@ const runGetApi = async (
   url: string,
   payload: string[],
   queryParams: Data = {},
-  headers: Headers = {}
+  headers: Headers = {},
 ): Promise<any> => {
   const query = convQueryParamsForGet(payload, queryParams);
 
@@ -137,10 +126,11 @@ const runGetApi = async (
     `${url}?${new URLSearchParams(query).toString()}`,
     {
       headers,
-    }
+    },
   );
 
   if (!response.ok) {
+    // TODO: 서버가 JSON이 아닌 응답(HTML, plain text 등)을 반환할 경우 json() 파싱 에러 발생
     const error = await response.json();
     throw {
       status: response.status,
@@ -156,7 +146,7 @@ const runApi = async (
   method: string,
   payload: string[],
   data: Data = {},
-  headers: Headers = {}
+  headers: Headers = {},
 ): Promise<any> => {
   const body = getBodyFromData(payload, data);
   const response = await fetch(url, {
@@ -166,6 +156,7 @@ const runApi = async (
   });
 
   if (!response.ok) {
+    // TODO: 서버가 JSON이 아닌 응답(HTML, plain text 등)을 반환할 경우 json() 파싱 에러 발생
     const error = await response.json();
     throw {
       status: response.status,
@@ -182,13 +173,10 @@ const runApiWithFiles = async (
   payload: string[],
   fileIndex: string[] = [],
   data: Data = {},
-  headers: Headers = {}
+  headers: Headers = {},
 ): Promise<any> => {
   const body = getBodyFromDataWithFile(payload, fileIndex, data);
-
-  if (!headers["Content-Type"]) {
-    headers["Content-Type"] = "application/x-www-form-urlencoded";
-  }
+  delete headers["Content-Type"];
 
   const response = await fetch(url, {
     method,
@@ -197,6 +185,7 @@ const runApiWithFiles = async (
   });
 
   if (!response.ok) {
+    // TODO: 서버가 JSON이 아닌 응답(HTML, plain text 등)을 반환할 경우 json() 파싱 에러 발생
     const error = await response.json();
     throw {
       status: response.status,
@@ -209,10 +198,10 @@ const runApiWithFiles = async (
 
 export default (_baseUrl: string, getAuthorizeToken: () => string | null) => {
   return async (
-    route: tpRoute,
+    route: Route,
     pathParams: PathParams = {},
     data: Data | null = null,
-    headers: Headers = {}
+    headers: Headers = {},
   ): Promise<any> => {
     const {
       method,
