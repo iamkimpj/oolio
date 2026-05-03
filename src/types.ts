@@ -11,7 +11,7 @@ export interface PayloadDefinition {
 export type RequestPayload = Record<string, any>;
 export type ResponseData = any;
 
-export interface Route<
+export interface IO<
   _RequestPayload = RequestPayload,
   _ResponseData = ResponseData,
 > {
@@ -25,13 +25,13 @@ export interface Route<
 
 export type Routes = {
   [category: string]: {
-    [fnName: string]: Route<RequestPayload, ResponseData>;
+    [fnName: string]: IO<RequestPayload, ResponseData>;
   };
 };
 
 export type ApiClient<TRoutes extends Routes> = {
   [K in keyof TRoutes]: {
-    [F in keyof TRoutes[K]]: TRoutes[K][F] extends Route<infer P, infer R>
+    [F in keyof TRoutes[K]]: TRoutes[K][F] extends IO<infer P, infer R>
       ? (data?: P) => Promise<R>
       : never;
   };

@@ -1,7 +1,7 @@
 import setRequest from "./request";
 import type { OolioConfig, Routes, ApiClient } from "./types";
 
-export type { Route } from "./types";
+export type { IO } from "./types";
 import { warnNoRoutes, warnNoGetAuthorizeToken } from "./warnings";
 
 export default function oolio<TRoutes extends Routes>({

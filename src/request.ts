@@ -3,7 +3,7 @@ import type {
   Data,
   Headers,
   PayloadDefinition,
-  Route,
+  IO,
 } from "./types";
 
 const hasParams = (path: string): boolean => {
@@ -198,7 +198,7 @@ const runApiWithFiles = async (
 
 export default (_baseUrl: string, getAuthorizeToken: () => string | null) => {
   return async (
-    route: Route,
+    route: IO,
     pathParams: PathParams = {},
     data: Data | null = null,
     headers: Headers = {},

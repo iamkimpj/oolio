@@ -83,11 +83,11 @@ await api.user.uploadAvatar({ userId: "123", avatar: fileInput.files[0] });
 
 ### TypeScript
 
-`Route<TPayload, TResponse>` 제네릭으로 요청/응답 타입을 정의할 수 있습니다.
+`IO<TPayload, TResponse>` 제네릭으로 요청/응답 타입을 정의할 수 있습니다.
 
 ```typescript
 import oolio from "oolio";
-import type { Route } from "oolio";
+import type { IO } from "oolio";
 
 const routes = {
   auth: {
@@ -95,18 +95,18 @@ const routes = {
       method: "post",
       path: "/auth/login",
       payload: ["email", "password"],
-    } as Route<{ email: string; password: string }, { token: string }>,
+    } as IO<{ email: string; password: string }, { token: string }>,
   },
   user: {
     getProfile: {
       method: "get",
       path: "/user/profile",
-    } as Route<void, { name: string; avatar: string }>,
+    } as IO<void, { name: string; avatar: string }>,
 
     getUserById: {
       method: "get",
       path: "/user/{userId}",
-    } as Route<{ userId: string }, { id: string; name: string }>,
+    } as IO<{ userId: string }, { id: string; name: string }>,
 
     // 경로 파라미터 + payload 동시 사용
     // 첫 번째 인자: 경로 파라미터, 두 번째 인자: payload
@@ -114,14 +114,14 @@ const routes = {
       method: "put",
       path: "/user/{userId}",
       payload: ["name", "email"],
-    } as Route<{ name: string; email: string }, { success: boolean }>,
+    } as IO<{ name: string; email: string }, { success: boolean }>,
 
     uploadAvatar: {
       method: "post",
       path: "/user/avatar",
       payload: ["userId"],
       files: ["avatar"],
-    } as Route<{ userId: string; avatar: File }, { url: string }>,
+    } as IO<{ userId: string; avatar: File }, { url: string }>,
   },
 };
 
