@@ -1,0 +1,165 @@
+# oolio
+
+> Routes 트리로 typed API 클라이언트를 생성하는 경량 TypeScript 라이브러리.
+> fetch 기반, 브라우저/Node.js 모두 지원.
+
+## 핵심 개념
+
+### 1. Route 정의 (`IO`)
+
+`IO` 타입으로 API 엔드포인트를 선언한다.
+
+```ts
+import type { IO } from "oolio";
+
+const routes = {
+  auth: {
+    login: {
+      method: "post",
+      path: "/auth/login",
+      payload: ["email", "password"], // body에 포함될 키 목록
+    } as IO<{ email: string; password: string }, { token: string }>,
+  },
+  user: {
+    getProfile: { method: "get", path: "/user/profile" } as IO<void, { name: string }>,
+    getUserById: { method: "get", path: "/user/{userId}" } as IO<{ userId: string }, { id: string; name: string }>,
+    updateUser:  { method: "put", path: "/user/{userId}", payload: ["name"] } as IO<{ name: string }, void>,
+  },
+};
+```
+
+`IO` 필드:
+- `method`: HTTP 메소드 (get | post | put | delete | patch)
+- `path`: 경로. `{paramName}` 패턴으로 path param 선언
+- `payload`: body(POST/PUT 등) 또는 query string(GET)에 포함할 키 목록. 명시되지 않은 키는 자동 제외됨
+- `authorization`: `"guest"` 설정 시 Bearer 토큰 미첨부
+- `baseUrl`: 라우트별 baseUrl 오버라이드
+
+### 2. 클라이언트 초기화
+
+```ts
+import oolio from "oolio";
+
+const api = oolio({
+  routes,
+  getAuthorizeToken: () => localStorage.getItem("token"), // null 반환 시 Authorization 헤더 미첨부
+  baseUrl: "https://api.example.com",
+  option: { logger: false },   // true 시 요청/응답 콘솔 출력
+  interceptors: { ... },       // 선택
+});
+```
+
+### 3. 호출 시그니처 — 가장 중요
+
+path에 `{param}` 패턴이 있는지에 따라 인자 순서가 달라진다.
+
+#### path params 없는 route
+```
+fn(data?)
+fn(data?, options?)       // options = { headers?: Record<string, string> }
+```
+```ts
+await api.auth.login({ email: "a@b.com", password: "1234" });
+await api.user.getProfile();
+await api.user.getProfile({ headers: { "X-Custom": "val" } }); // data 생략, headers만
+await api.auth.login({ email: "a@b.com", password: "1234" }, { headers: { "X-Trace": "id" } });
+```
+
+#### path params 있는 route
+```
+fn(pathParams?)
+fn(pathParams?, data?)
+fn(pathParams?, data?, options?)
+fn(pathParams?, options?)  // data 생략, options 바로
+```
+```ts
+await api.user.getUserById({ userId: "123" });
+await api.user.updateUser({ userId: "123" }, { name: "John" });
+await api.user.getUserById({ userId: "123" }, { headers: { "X-Custom": "val" } }); // data 생략
+await api.user.updateUser({ userId: "123" }, { name: "John" }, { headers: { "X-Trace": "id" } });
+```
+
+#### options 오브젝트 감지 규칙
+마지막 인자가 `{ headers: <object> }` 키를 가지면 options로 인식한다.
+data를 생략하고 headers만 넘길 때 null을 채울 필요 없다.
+
+### 4. 본문 직렬화
+
+| 조건 | Content-Type | 본문 |
+|------|-------------|------|
+| GET | 없음 | payload 키를 query string으로 |
+| payload에 File/Blob 포함 | multipart/form-data (자동) | FormData |
+| data가 FormData 인스턴스 | multipart/form-data (자동) | 그대로 전달 |
+| 그 외 | application/json | JSON.stringify(payload 필터링) |
+
+`options.headers["Content-Type"]`을 직접 지정하면 자동 감지보다 항상 우선한다.
+
+### 5. 인터셉터
+
+```ts
+const api = oolio({
+  routes,
+  getAuthorizeToken: () => null,
+  baseUrl: "https://api.example.com",
+  interceptors: {
+    // fetch 직전, 직렬화 완료 후 config 변형
+    request: (config) => {
+      config.headers["X-Trace-Id"] = crypto.randomUUID();
+      return config; // 반드시 config 반환
+    },
+    // 성공 응답 파싱 후 데이터 변형
+    response: (data, config) => data.result ?? data,
+    // 에러 처리. 값 반환 시 호출자에게 전달됨 (throw 없이). throw 시 호출자까지 전파
+    responseError: async (err, config) => {
+      if (err.status === 404) return null;
+      throw err;
+    },
+    // 재시도 여부 결정. true 반환 시 동일 config로 재시도
+    // attempt: 지금까지 실패 횟수 (첫 실패 후 attempt=1)
+    retry: async (err, config, attempt) => {
+      if (err.status !== 503 || attempt >= 3) return false;
+      await new Promise(r => setTimeout(r, 2 ** attempt * 100));
+      return true;
+    },
+  },
+});
+```
+
+인터셉터 실행 순서: `request` → fetch → (성공) `response` / (실패) `retry` → `responseError`
+
+### 6. 에러 형식 (`OolioError`)
+
+```ts
+interface OolioError {
+  status: number;      // HTTP 상태 코드
+  statusText: string;
+  data: any;           // 서버 응답 JSON
+}
+```
+
+## 파일 구조
+
+- `src/index.ts` — `oolio()` 진입점. routes 트리를 순회해 호출 가능한 `api[category][fn]` 객체 생성. 호출 시 args 라우팅(pathParams/data/options 분리) 처리
+- `src/request.ts` — HTTP 로직. `buildRequestConfig`(직렬화) + `doFetch`(fetch+파싱) + 인터셉터 루프
+- `src/types.ts` — 모든 타입 정의
+
+## 자주 하는 실수
+
+```ts
+// ❌ 잘못된 예: path params 있는 route에 data만 넘기기
+await api.user.updateUser({ name: "John" }); // {name}이 pathParams로 해석됨 → URL 빌드 실패
+
+// ✅ 올바른 예
+await api.user.updateUser({ userId: "123" }, { name: "John" });
+
+// ❌ 잘못된 예: payload에 없는 키는 body에서 자동 제외됨
+// route payload: ["name"] 일 때
+await api.user.updateUser({ userId: "123" }, { name: "John", secret: "ignored" });
+// → body: { name: "John" }  (secret 제외됨)
+
+// ❌ 잘못된 예: per-request headers를 flat object로 전달 (구버전 API)
+await api.user.getProfile("token-here"); // 동작 안 함
+
+// ✅ 올바른 예: options 오브젝트 사용
+await api.user.getProfile({ headers: { "Authorization": "Bearer token" } });
+```

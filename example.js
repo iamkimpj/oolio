@@ -28,8 +28,7 @@ const routes = {
     uploadAvatar: {
       method: "post",
       path: "/user/avatar",
-      payload: ["userId"],
-      files: ["avatar"],
+      payload: ["userId", "avatar"],
     },
     getUserById: {
       method: "get",
@@ -48,6 +47,27 @@ const api = oolio({
   routes,
   getAuthorizeToken: () => localStorage.getItem("token"),
   baseUrl: "https://api.example.com",
+  option: { logger: true },
+  interceptors: {
+    // 모든 요청에 트레이스 ID 헤더 추가
+    request: (config) => {
+      config.headers["X-Trace-Id"] = crypto.randomUUID();
+      return config;
+    },
+    // 응답 데이터 unwrap: { result: ... } 구조라면 result만 반환
+    response: (data) => data.result ?? data,
+    // 에러 처리: 404는 null로 변환, 나머지는 그대로 throw
+    responseError: async (err) => {
+      if (err.status === 404) return null;
+      throw err;
+    },
+    // 503 에러 최대 3회 지수 백오프 재시도
+    retry: async (err, _config, attempt) => {
+      if (err.status !== 503 || attempt >= 3) return false;
+      await new Promise((r) => setTimeout(r, 2 ** attempt * 100));
+      return true;
+    },
+  },
 });
 
 // 3. API 사용 예제
@@ -124,6 +144,33 @@ async function updateUserById(userId, name, email) {
     console.error("사용자 정보 수정 실패:", error);
     throw error;
   }
+}
+
+// 3.6 per-request 옵션 (headers)
+// 마지막 인자로 { headers: { ... } } 오브젝트를 넘기면 해당 요청에만 적용됩니다.
+
+// path params 없는 route — data 없이 headers만 전달
+async function getProfileWithCustomHeader() {
+  return api.user.getProfile({ headers: { "X-Request-Source": "mobile" } });
+}
+
+// path params 없는 route — data + headers 함께 전달
+async function loginWithTraceId(email, password) {
+  return api.auth.login({ email, password }, { headers: { "X-Trace-Id": crypto.randomUUID() } });
+}
+
+// path params 있는 route — data 없이 pathParams + headers 전달
+async function getUserByIdWithHeader(userId) {
+  return api.user.getUserById({ userId }, { headers: { "X-Request-Source": "admin" } });
+}
+
+// path params 있는 route — pathParams + data + headers 모두 전달
+async function updateUserWithTraceId(userId, name, email) {
+  return api.user.updateUserById(
+    { userId },
+    { name, email },
+    { headers: { "X-Trace-Id": crypto.randomUUID() } },
+  );
 }
 
 // 4. 사용 예시

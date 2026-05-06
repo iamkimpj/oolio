@@ -1,6 +1,6 @@
 {
   "name": "oolio",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "A universal API client library",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -20,7 +20,12 @@
     "build": "npm run clean && node build.js",
     "clean": "rm -rf dist",
     "prepare": "npm run build",
-    "dev": "node build.js"
+    "dev": "node build.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "check": "biome check --write ."
   },
   "keywords": [
     "api",
@@ -37,8 +42,10 @@
   },
   "license": "MIT",
   "devDependencies": {
+    "@biomejs/biome": "^2.4.14",
     "@types/node": "^20.11.24",
     "esbuild": "^0.19.12",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.5"
   }
 }
