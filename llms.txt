@@ -44,7 +44,7 @@ const api = oolio({
   routes,
   getAuthorizeToken: () => localStorage.getItem("token"), // null 반환 시 Authorization 헤더 미첨부
   baseUrl: "https://api.example.com",
-  option: { logger: false },   // true 시 요청/응답 콘솔 출력
+  option: { logger: true, loggerPretty: true },  // logger: 요청/응답 콘솔 출력. loggerPretty: 객체 전체 depth 출력
   interceptors: { ... },       // 선택
 });
 ```

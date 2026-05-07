@@ -270,4 +270,46 @@ describe("setRequest", () => {
       );
     });
   });
+
+  // ────────────────────────────────────────────────────────────
+  // loggerPretty
+  // ────────────────────────────────────────────────────────────
+
+  describe("loggerPretty", () => {
+    it("logger: true — 응답 객체를 raw object로 console.log에 전달", async () => {
+      const spy = vi.spyOn(console, "log").mockImplementation(() => {});
+      mockFetch.mockReturnValueOnce(okResponse({ data: { items: [{ id: 1 }], total: 1 } }));
+      const fn = setRequest("https://api.example.com", () => null, { logger: true });
+      await fn({ method: "get", path: "/users" } as IO, {}, null, {});
+      const responseCall = spy.mock.calls.find((args) => String(args[0]).includes("←"));
+      const resultArg = responseCall?.[responseCall.length - 1];
+      expect(typeof resultArg).toBe("object");
+      spy.mockRestore();
+    });
+
+    it("loggerPretty: true — 응답 객체를 JSON 문자열로 console.log에 전달", async () => {
+      const spy = vi.spyOn(console, "log").mockImplementation(() => {});
+      mockFetch.mockReturnValueOnce(okResponse({ data: { items: [{ id: 1 }], total: 1 } }));
+      const fn = setRequest("https://api.example.com", () => null, { logger: true, loggerPretty: true });
+      await fn({ method: "get", path: "/users" } as IO, {}, null, {});
+      const responseCall = spy.mock.calls.find((args) => String(args[0]).includes("←"));
+      const resultArg = responseCall?.[responseCall.length - 1];
+      expect(typeof resultArg).toBe("string");
+      expect(resultArg).toContain('"items"');
+      expect(resultArg).toContain('"total": 1');
+      spy.mockRestore();
+    });
+
+    it("loggerPretty: true — 요청 객체도 JSON 문자열로 출력", async () => {
+      const spy = vi.spyOn(console, "log").mockImplementation(() => {});
+      mockFetch.mockReturnValueOnce(okResponse({}));
+      const fn = setRequest("https://api.example.com", () => null, { logger: true, loggerPretty: true });
+      await fn({ method: "post", path: "/users" } as IO, {}, { name: "test", nested: { a: 1 } }, {});
+      const requestCall = spy.mock.calls.find((args) => String(args[0]).includes("→") && args.length > 2);
+      const payloadArg = requestCall?.find((a) => typeof a === "string" && a.includes('"name"'));
+      expect(payloadArg).toBeDefined();
+      expect(payloadArg).toContain('"nested"');
+      spy.mockRestore();
+    });
+  });
 });

@@ -160,9 +160,10 @@ await api.user.updateUserById(
 
 `oolio({ ..., option })`에 전달하는 클라이언트 단위 설정.
 
-| 옵션     | 기본값 | 설명                                                  |
-| -------- | ------ | ----------------------------------------------------- |
-| `logger` | false  | true 설정 시 모든 요청·응답·에러를 console에 출력     |
+| 옵션           | 기본값 | 설명                                                                           |
+| -------------- | ------ | ------------------------------------------------------------------------------ |
+| `logger`       | false  | true 설정 시 모든 요청·응답·에러를 console에 출력                              |
+| `loggerPretty` | false  | true 설정 시 객체를 `JSON.stringify`로 전체 depth 출력 (`logger: true`일 때만 적용) |
 
 ### 로그 활성화
 
@@ -184,6 +185,34 @@ const api = oolio({
 ```
 
 `Authorization` 헤더는 토큰 노출을 줄이기 위해 부분 마스킹됩니다(앞/뒤 일부만 표시). 그 외 body·data는 마스킹 없이 그대로 출력되므로 운영 환경에서는 활성화하지 않는 것을 권장합니다.
+
+### 중첩 객체 전체 출력 (`loggerPretty`)
+
+기본적으로 Node.js의 `console.log`는 객체를 depth 2까지만 출력해 중첩된 값이 `[Object]`로 잘립니다. `loggerPretty: true`를 함께 설정하면 객체를 `JSON.stringify`로 포매팅해 전체 내용을 확인할 수 있습니다.
+
+```javascript
+const api = oolio({
+  routes,
+  getAuthorizeToken: () => null,
+  baseUrl: "https://api.example.com",
+  option: { logger: true, loggerPretty: true },
+});
+```
+
+```
+// logger: true 만 설정한 경우
+[oolio]:k3p9af ← GET https://api.example.com/items (120ms) { data: { items: [Array], total: 1 } }
+
+// loggerPretty: true 추가 시
+[oolio]:k3p9af ← GET https://api.example.com/items (120ms) {
+  "data": {
+    "items": [
+      { "id": 1, "name": "example" }
+    ],
+    "total": 1
+  }
+}
+```
 
 ## 본문 직렬화 규칙
 
@@ -288,6 +317,12 @@ try {
 ```
 
 ## 변경 이력
+
+### 0.2.4
+
+**신규 기능**
+
+- `OolioConfig.option.loggerPretty` 추가 — `logger: true`일 때 중첩 객체를 `JSON.stringify`로 전체 depth 출력
 
 ### 0.2.3
 

@@ -232,6 +232,13 @@ export default (
     headers: Headers = {},
   ): Promise<any> => {
     const log = option?.logger === true;
+    const pretty = log && option?.loggerPretty === true;
+    const fmt = (...args: unknown[]) =>
+      pretty
+        ? args.map((a) =>
+            typeof a === "object" && a !== null ? JSON.stringify(a, null, 2) : a,
+          )
+        : args;
     const reqId = log ? genRequestId() : "";
     const tag = `[oolio]:${reqId}`;
     const startedAt = log ? Date.now() : 0;
@@ -250,11 +257,11 @@ export default (
     }
 
     if (log) {
-      console.log(`${tag} →`, route, {
+      console.log(...fmt(`${tag} →`, route, {
         pathParams,
         data,
         headers: maskAuthorization(config.headers),
-      });
+      }));
       console.log(`${tag} →`, config.method.toUpperCase(), config.url);
     }
 
@@ -267,11 +274,13 @@ export default (
         }
         if (log) {
           console.log(
-            `${tag} ←`,
-            config.method.toUpperCase(),
-            config.url,
-            `(${Date.now() - startedAt}ms)`,
-            result,
+            ...fmt(
+              `${tag} ←`,
+              config.method.toUpperCase(),
+              config.url,
+              `(${Date.now() - startedAt}ms)`,
+              result,
+            ),
           );
         }
         return result;
@@ -302,22 +311,26 @@ export default (
           );
           if (log) {
             console.log(
-              `${tag} ← (handled by responseError)`,
-              config.method.toUpperCase(),
-              config.url,
-              `(${Date.now() - startedAt}ms)`,
-              handled,
+              ...fmt(
+                `${tag} ← (handled by responseError)`,
+                config.method.toUpperCase(),
+                config.url,
+                `(${Date.now() - startedAt}ms)`,
+                handled,
+              ),
             );
           }
           return handled;
         }
         if (log) {
           console.error(
-            `${tag} ✗`,
-            config.method.toUpperCase(),
-            config.url,
-            `(${Date.now() - startedAt}ms)`,
-            err,
+            ...fmt(
+              `${tag} ✗`,
+              config.method.toUpperCase(),
+              config.url,
+              `(${Date.now() - startedAt}ms)`,
+              err,
+            ),
           );
         }
         throw err;

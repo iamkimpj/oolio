@@ -1,6 +1,6 @@
 {
   "name": "oolio",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "A universal API client library",
   "type": "module",
   "main": "./dist/index.cjs",

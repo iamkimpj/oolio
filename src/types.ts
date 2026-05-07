@@ -51,6 +51,8 @@ export type ApiClient<TRoutes extends Routes> = {
 export interface OolioOption {
   /** true 설정 시 요청·응답·에러를 console에 출력. 운영 환경에서는 비활성화 권장 */
   logger?: boolean;
+  /** true 설정 시 객체를 JSON.stringify로 전체 depth 출력. logger: true일 때만 적용 */
+  loggerPretty?: boolean;
 }
 
 /**
