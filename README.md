@@ -142,6 +142,31 @@ await api.user.updateUserById(
 );
 ```
 
+> **`IO` 타입 규칙**: `IO<TPayload, TResponse>`의 `TPayload`는 body(POST/PUT 등) 또는 query string(GET) 필드 타입만 기술합니다. path의 `{param}` 패턴으로 선언한 **path params는 `IO` 타입에 포함하지 않습니다.** path params는 항상 `Record<string, string>`으로 처리되며, 라이브러리가 런타임에 자동으로 분리합니다.
+>
+> ```typescript
+> // ❌ 잘못된 예: path param을 TPayload에 포함
+> updateUserById: {
+>   method: "put",
+>   path: "/user/{userId}",
+>   payload: ["name", "email"],
+> } as IO<{ userId: string; name: string; email: string }, { success: boolean }>,
+> //         ^^^^^^^^ path param — IO에 넣으면 안 됨
+>
+> // ✅ 올바른 예: payload 필드(body에 담길 것들)만 기술
+> updateUserById: {
+>   method: "put",
+>   path: "/user/{userId}",
+>   payload: ["name", "email"],
+> } as IO<{ name: string; email: string }, { success: boolean }>,
+>
+> // ✅ path params만 있고 payload 없는 경우: TPayload는 void
+> getUserById: {
+>   method: "get",
+>   path: "/user/{userId}",
+> } as IO<void, { id: string; name: string }>,
+> ```
+
 ## 라우트 옵션
 
 | 옵션            | 필수 | 설명                                                                   |
@@ -315,6 +340,12 @@ try {
 ```
 
 ## 변경 이력
+
+### 0.2.6
+
+**문서 개선**
+
+- `IO<TPayload, TResponse>` 타입 규칙 명시 — `TPayload`는 body/query 필드 전용이며 path params는 포함하지 않는다는 설명과 올바른/잘못된 예시 추가
 
 ### 0.2.5
 
