@@ -105,10 +105,8 @@ const routes = {
     getUserById: {
       method: "get",
       path: "/user/{userId}",
-    } as IO<{ userId: string }, { id: string; name: string }>,
+    } as IO<void, { id: string; name: string }>,
 
-    // 경로 파라미터 + payload 동시 사용
-    // 첫 번째 인자: 경로 파라미터, 두 번째 인자: payload
     updateUserById: {
       method: "put",
       path: "/user/{userId}",
@@ -118,8 +116,8 @@ const routes = {
     uploadAvatar: {
       method: "post",
       path: "/user/avatar",
-      payload: ["userId", "avatar"],
-    } as IO<{ userId: string; avatar: File }, { url: string }>,
+      payload: ["avatar"],
+    } as IO<{ avatar: File }, { url: string }>,
   },
 };
 
@@ -317,6 +315,12 @@ try {
 ```
 
 ## 변경 이력
+
+### 0.2.5
+
+**버그 수정**
+
+- `ApiClient` 타입이 path params 있는 route에서 인자 2개를 받지 못하던 문제 수정 — `(pathParams, data?)` 시그니처를 오버로드로 추가해 TypeScript 에러 해소
 
 ### 0.2.4
 

@@ -36,14 +36,17 @@ export interface IO<
 
 export type Routes = {
   [category: string]: {
-    [fnName: string]: IO<RequestPayload, ResponseData>;
+    [fnName: string]: IO<any, any>;
   };
 };
 
 export type ApiClient<TRoutes extends Routes> = {
   [K in keyof TRoutes]: {
     [F in keyof TRoutes[K]]: TRoutes[K][F] extends IO<infer P, infer R>
-      ? (data?: P) => Promise<R>
+      ? {
+          (data?: P, options?: RequestOptions): Promise<R>;
+          (pathParams: PathParams, data?: P, options?: RequestOptions): Promise<R>;
+        }
       : never;
   };
 };

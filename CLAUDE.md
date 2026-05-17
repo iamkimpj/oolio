@@ -31,6 +31,8 @@ npm run check        # biome check --write (lint + format 통합)
 - 마지막 인자가 `{ headers: <object> }` 키를 가지면 자동으로 per-request options로 인식. data를 생략하고 headers만 넘길 때 null을 채울 필요 없다.
 - args 라우팅은 `index.ts`의 `hasParams()` 분기에서 처리. `request.ts`의 `requestFn`은 항상 `(route, pathParams, data, headers)` 고정 시그니처로 받는다.
 
+**`ApiClient` 타입**: path params 유무를 런타임에서만 판별하므로, TypeScript 타입은 두 시그니처를 오버로드로 선언한다. `(data?, options?)` 와 `(pathParams, data?, options?)` 모두 허용한다. 이 덕분에 path params 있는 route에 인자 2개를 넘겨도 TS 에러가 발생하지 않는다.
+
 **빌드 출력**: `build.js`가 esbuild로 `dist/index.mjs`(ESM), `dist/index.cjs`(CJS), `dist/index.d.ts`(타입 선언)를 생성한다. 타입 선언은 tsc가 아니라 `build.js` 내에서 하드코딩된 문자열로 덮어쓴다.
 
 **llms.txt**: AI 코드 어시스턴트용 참조 문서. 호출 시그니처 규칙, options 감지 로직, 자주 하는 실수 등이 정리되어 있다. 라이브러리 동작이 바뀌면 함께 업데이트해야 한다.

@@ -21,19 +21,21 @@ const routes = {
     } as IO<{ email: string; password: string }, { token: string }>,
   },
   user: {
-    getProfile: { method: "get", path: "/user/profile" } as IO<void, { name: string }>,
-    getUserById: { method: "get", path: "/user/{userId}" } as IO<{ userId: string }, { id: string; name: string }>,
+    getProfile:  { method: "get", path: "/user/profile" } as IO<void, { name: string }>,
+    getUserById: { method: "get", path: "/user/{userId}" } as IO<void, { id: string; name: string }>,
     updateUser:  { method: "put", path: "/user/{userId}", payload: ["name"] } as IO<{ name: string }, void>,
   },
 };
 ```
 
-`IO` 필드:
+`IO<TPayload, TResponse>` 필드:
 - `method`: HTTP 메소드 (get | post | put | delete | patch)
 - `path`: 경로. `{paramName}` 패턴으로 path param 선언
 - `payload`: body(POST/PUT 등) 또는 query string(GET)에 포함할 키 목록. 명시되지 않은 키는 자동 제외됨
 - `authorization`: `"guest"` 설정 시 Bearer 토큰 미첨부
 - `baseUrl`: 라우트별 baseUrl 오버라이드
+
+path params는 항상 `Record<string, string>`이므로 별도 제네릭 없음. 호출 시 첫 번째 인자로 전달하면 런타임에서 자동 처리된다.
 
 ### 2. 클라이언트 초기화
 
@@ -146,10 +148,13 @@ interface OolioError {
 ## 자주 하는 실수
 
 ```ts
-// ❌ 잘못된 예: path params 있는 route에 data만 넘기기
-await api.user.updateUser({ name: "John" }); // {name}이 pathParams로 해석됨 → URL 빌드 실패
+// ❌ 잘못된 예: path params 있는 route에 pathParams와 data를 하나로 합쳐서 넘기기
+// route: { method: "patch", path: "/user/{userId}", payload: ["name"] }
+await api.user.updateUser({ userId: "123", name: "John" });
+// → pathParams = { userId: "123", name: "John" }, data = null
+// → body가 비어버림 (name이 pathParams로 해석됨)
 
-// ✅ 올바른 예
+// ✅ 올바른 예: pathParams와 data를 분리해서 넘기기
 await api.user.updateUser({ userId: "123" }, { name: "John" });
 
 // ❌ 잘못된 예: payload에 없는 키는 body에서 자동 제외됨
@@ -163,3 +168,24 @@ await api.user.getProfile("token-here"); // 동작 안 함
 // ✅ 올바른 예: options 오브젝트 사용
 await api.user.getProfile({ headers: { "Authorization": "Bearer token" } });
 ```
+
+## TypeScript 타입 (`ApiClient`)
+
+`ApiClient` 타입은 두 시그니처를 오버로드로 선언한다. `PP`는 `IO` 세 번째 제네릭(`TPathParams`)에서 추론된다:
+
+```ts
+(data?: P, options?: RequestOptions): Promise<R>
+(pathParams: PP, data?: P, options?: RequestOptions): Promise<R>
+```
+
+`IO` 세 번째 제네릭을 지정하면 pathParams 타입이 정확히 검사된다:
+
+```ts
+// payload 있음
+IO<{ name: string; email: string }, { success: boolean }>
+
+// payload 없음 (GET, path params only 등)
+IO<void, { id: string; name: string }>
+```
+
+pathParams는 `Record<string, string>`으로 고정. 오버로드 타입 덕분에 `fn(pathParams, data?)` 와 `fn(data?)` 모두 TS 에러 없이 허용된다.
