@@ -114,6 +114,28 @@ describe("setRequest", () => {
       expect(init.headers["Content-Type"]).toBeUndefined();
     });
 
+    it("auto-converts to FormData when payload contains a React Native file object", async () => {
+      mockFetch.mockReturnValueOnce(okResponse({ url: "https://cdn.example.com/img.png" }));
+      const fn = setRequest("https://api.example.com", () => null);
+      const rnFile = { uri: "file:///var/mobile/photo.jpg", name: "photo.jpg", type: "image/jpeg" };
+      const route: IO = { method: "post", path: "/upload", payload: ["userId", "file"] };
+      await fn(route, {}, { userId: "123", file: rnFile }, {});
+      const [, init] = mockFetch.mock.calls[0];
+      expect(init.body).toBeInstanceOf(FormData);
+      expect(init.headers["Content-Type"]).toBeUndefined();
+    });
+
+    it("auto-converts to FormData when payload contains a Node.js Buffer", async () => {
+      mockFetch.mockReturnValueOnce(okResponse({ url: "https://cdn.example.com/file.pdf" }));
+      const fn = setRequest("https://api.example.com", () => null);
+      const buffer = Buffer.from("file content");
+      const route: IO = { method: "post", path: "/upload", payload: ["userId", "file"] };
+      await fn(route, {}, { userId: "123", file: buffer }, {});
+      const [, init] = mockFetch.mock.calls[0];
+      expect(init.body).toBeInstanceOf(FormData);
+      expect(init.headers["Content-Type"]).toBeUndefined();
+    });
+
     it("passes FormData directly when data is a FormData instance", async () => {
       mockFetch.mockReturnValueOnce(okResponse({}));
       const fn = setRequest("https://api.example.com", () => null);

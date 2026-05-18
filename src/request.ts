@@ -31,9 +31,22 @@ export const hasParams = (path: string): boolean => {
   return paramPattern.test(path);
 };
 
+const isRNFile = (v: unknown): boolean => {
+  if (typeof v !== "object" || v === null) return false;
+  const obj = v as Record<string, unknown>;
+  return typeof obj.uri === "string" && typeof obj.type === "string";
+};
+
+const isNodeBuffer = (v: unknown): boolean => {
+  const B = (globalThis as any).Buffer;
+  return typeof B !== "undefined" && v instanceof B;
+};
+
 const isBinary = (v: unknown): boolean =>
   (typeof File !== "undefined" && v instanceof File) ||
-  (typeof Blob !== "undefined" && v instanceof Blob);
+  (typeof Blob !== "undefined" && v instanceof Blob) ||
+  isRNFile(v) ||
+  isNodeBuffer(v);
 
 const containsBinary = (data: Data): boolean => {
   for (const key in data) {
@@ -179,7 +192,7 @@ const buildRequestConfig = async (
         for (const key in filtered) {
           const v = filtered[key];
           if (isBinary(v)) {
-            formData.append(key, v as Blob);
+            formData.append(key, v as any);
           } else if (v === null || v === undefined) {
             formData.append(key, "");
           } else if (typeof v === "object") {

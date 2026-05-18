@@ -13,9 +13,9 @@ npm install oolio
 - 라우트 기반의 API 클라이언트
 - 자동 인증 토큰 처리 (Bearer)
 - 경로 파라미터 지원 (`/user/{userId}`)
-- 본문 자동 직렬화 — 일반 POST/PUT/DELETE는 `application/json`, `payload` 값에 `File`/`Blob`이 있으면 `multipart/form-data`로 자동 전환
+- 본문 자동 직렬화 — 일반 POST/PUT/DELETE는 `application/json`, `payload` 값에 `File`/`Blob`, React Native 파일 객체(`{ uri, type, name? }`), Node.js `Buffer`가 있으면 `multipart/form-data`로 자동 전환
 - 통일된 에러 처리 형식
-- 브라우저 / Node.js 환경 모두 지원
+- 브라우저 / Node.js / React Native 환경 모두 지원
 - TypeScript 제네릭으로 요청/응답 타입 정의 가능
 
 ## 사용법
@@ -177,7 +177,7 @@ await api.user.updateUserById(
 | `authorization` | -    | `false` 또는 `"guest"` 설정 시 토큰 미첨부 (기본값: true)              |
 | `baseUrl`       | -    | 라우트별 baseUrl 오버라이드                                            |
 
-> 파일 업로드는 별도 옵션 없이 `payload`에 키만 명시하면 됩니다. 호출 시 해당 값이 `File`/`Blob` 인스턴스이면 자동으로 `multipart/form-data`로 전송됩니다.
+> 파일 업로드는 별도 옵션 없이 `payload`에 키만 명시하면 됩니다. 호출 시 해당 값이 `File`/`Blob`, React Native 파일 객체(`{ uri: string, type: string, name?: string }`), Node.js `Buffer` 중 하나이면 자동으로 `multipart/form-data`로 전송됩니다.
 
 ## 클라이언트 옵션 (`option`)
 
@@ -241,12 +241,14 @@ const api = oolio({
 
 axios의 동작과 유사하게, 메소드와 호출 시 데이터에 따라 자동으로 본문 형식이 결정됩니다.
 
-| 조건                                                   | Content-Type                          | 본문                          |
-| ------------------------------------------------------ | ------------------------------------- | ----------------------------- |
-| `method: "get"`                                        | (없음)                                | URL query string              |
-| `payload` 값 중 `File`/`Blob` 인스턴스 존재            | `multipart/form-data` (브라우저 자동) | FormData (자동 변환)          |
-| 호출 시 `data`로 `FormData` 인스턴스 직접 전달         | `multipart/form-data` (브라우저 자동) | 전달한 FormData 그대로        |
-| 그 외 POST/PUT/DELETE                                  | `application/json`                    | `JSON.stringify(payload)`     |
+| 조건                                                                        | Content-Type                          | 본문                          |
+| --------------------------------------------------------------------------- | ------------------------------------- | ----------------------------- |
+| `method: "get"`                                                             | (없음)                                | URL query string              |
+| `payload` 값 중 `File`/`Blob` 인스턴스 존재                                 | `multipart/form-data` (자동)          | FormData (자동 변환)          |
+| `payload` 값 중 RN 파일 객체 (`{ uri, type, name? }`) 존재                  | `multipart/form-data` (자동)          | FormData (자동 변환)          |
+| `payload` 값 중 Node.js `Buffer` 존재                                       | `multipart/form-data` (자동)          | FormData (자동 변환)          |
+| 호출 시 `data`로 `FormData` 인스턴스 직접 전달                              | `multipart/form-data` (자동)          | 전달한 FormData 그대로        |
+| 그 외 POST/PUT/DELETE                                                       | `application/json`                    | `JSON.stringify(payload)`     |
 
 - **사용자가 `headers["Content-Type"]`을 직접 지정한 경우 항상 그 값을 우선합니다** — 자동 분기로 multipart가 되는 경우에도 `delete`하지 않고 사용자가 지정한 값을 그대로 보냅니다 (단, `multipart/form-data`로 임의 지정 시 boundary는 사용자 책임).
 - `payload`에 명시되지 않은 키는 자동 감지 대상에서 제외되어 잘려나갑니다 (협업 누락 방지를 위한 의도적 동작).
@@ -340,6 +342,13 @@ try {
 ```
 
 ## 변경 이력
+
+### 0.2.7
+
+**버그 수정**
+
+- React Native 환경에서 파일 업로드가 동작하지 않던 문제 수정 — RN 파일 객체(`{ uri, type, name? }`)를 binary로 감지해 `multipart/form-data`로 자동 전환
+- Node.js `Buffer`를 파일로 업로드할 수 없던 문제 수정 — `Buffer` 인스턴스를 binary로 감지해 `multipart/form-data`로 자동 전환
 
 ### 0.2.6
 
