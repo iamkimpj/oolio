@@ -175,6 +175,55 @@ describe("setRequest", () => {
   });
 
   // ────────────────────────────────────────────────────────────
+  // Wire method normalization
+  // ────────────────────────────────────────────────────────────
+
+  describe("wire method normalization", () => {
+    it("uppercases lowercase patch on the wire", async () => {
+      mockFetch.mockReturnValueOnce(okResponse({}));
+      const fn = setRequest("https://api.example.com", () => null);
+      const route: IO = { method: "patch", path: "/users/{id}", payload: ["name"] };
+      await fn(route, { id: "1" }, { name: "John" }, {});
+      expect(mockFetch.mock.calls[0][1].method).toBe("PATCH");
+    });
+
+    it("uppercases post/put/delete on the wire", async () => {
+      for (const m of ["post", "put", "delete"]) {
+        mockFetch.mockReset();
+        mockFetch.mockReturnValueOnce(okResponse({}));
+        const fn = setRequest("https://api.example.com", () => null);
+        await fn({ method: m, path: "/x", payload: [] } as IO, {}, {}, {});
+        expect(mockFetch.mock.calls[0][1].method).toBe(m.toUpperCase());
+      }
+    });
+
+    it("already-uppercase method stays uppercase", async () => {
+      mockFetch.mockReturnValueOnce(okResponse({}));
+      const fn = setRequest("https://api.example.com", () => null);
+      await fn({ method: "PATCH", path: "/x", payload: [] } as IO, {}, {}, {});
+      expect(mockFetch.mock.calls[0][1].method).toBe("PATCH");
+    });
+
+    it("GET sets no explicit method (fetch defaults to GET)", async () => {
+      mockFetch.mockReturnValueOnce(okResponse({}));
+      const fn = setRequest("https://api.example.com", () => null);
+      await fn({ method: "get", path: "/x" } as IO, {}, null, {});
+      expect(mockFetch.mock.calls[0][1].method).toBeUndefined();
+    });
+
+    it("uppercase GET is treated as a GET (query string, no body/method)", async () => {
+      mockFetch.mockReturnValueOnce(okResponse({}));
+      const fn = setRequest("https://api.example.com", () => null);
+      const route: IO = { method: "GET", path: "/items", payload: ["q"] };
+      await fn(route, {}, { q: "hello" }, {});
+      const [url, init] = mockFetch.mock.calls[0];
+      expect(url).toContain("/items?q=hello");
+      expect(init.method).toBeUndefined();
+      expect(init.body).toBeUndefined();
+    });
+  });
+
+  // ────────────────────────────────────────────────────────────
   // Authorization
   // ────────────────────────────────────────────────────────────
 

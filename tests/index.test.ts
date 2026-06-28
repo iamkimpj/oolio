@@ -173,7 +173,7 @@ describe("oolio", () => {
     );
     const [, init] = mockFetch.mock.calls[0];
     expect(init.credentials).toBe("include");
-    expect(init.method).toBe("put");
+    expect(init.method).toBe("PUT");
     expect(JSON.parse(init.body as string)).toEqual({ name: "John" });
   });
 
