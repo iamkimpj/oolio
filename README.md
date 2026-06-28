@@ -172,13 +172,17 @@ await api.user.updateUserById(
 
 | 옵션            | 필수 | 설명                                                                   |
 | --------------- | ---- | ---------------------------------------------------------------------- |
-| `method`        | O    | HTTP 메소드 (get, post, put, delete 등)                                |
+| `method`        | O    | HTTP 메소드 (get, post, put, delete, patch 등). 대소문자 무관 — 와이어에는 대문자로 정규화되어 전송 |
 | `path`          | O    | API 엔드포인트 경로. 경로 파라미터는 `{param}` 형식                    |
 | `payload`       | -    | 요청에 포함될 데이터 필드 목록 (파일 필드도 여기에 함께 명시)          |
 | `authorization` | -    | `false` 또는 `"guest"` 설정 시 토큰 미첨부 (기본값: true)              |
 | `baseUrl`       | -    | 라우트별 baseUrl 오버라이드                                            |
 
 > 파일 업로드는 별도 옵션 없이 `payload`에 키만 명시하면 됩니다. 호출 시 해당 값이 `File`/`Blob`, React Native 파일 객체(`{ uri: string, type: string, name?: string }`), Node.js `Buffer` 중 하나이면 자동으로 `multipart/form-data`로 전송됩니다.
+
+> **메서드 대소문자**: `method`는 대소문자를 가리지 않습니다. GET 판정(`"get"`/`"GET"` 모두 인식)과 본문 직렬화 분기는 내부적으로 대소문자 무관하게 처리되고, 실제 fetch 호출에 넘기는 와이어 메서드는 대문자로 정규화됩니다(`"patch"` → `PATCH`).
+>
+> 특히 PATCH가 중요합니다 — fetch 스펙은 PATCH를 자동 대문자화 대상에서 제외하므로 `fetch(url, { method: "patch" })`는 소문자 `patch`가 그대로 와이어에 나가고, 일부 서버(예: Next 16 Node HTTP)는 이를 malformed로 간주해 빈 400으로 끊습니다. oolio는 이를 라이브러리 차원에서 방지하므로 소비측 routes는 메서드를 소문자로 둬도 안전합니다.
 
 ## 클라이언트 옵션 (`option`)
 
@@ -244,7 +248,7 @@ axios의 동작과 유사하게, 메소드와 호출 시 데이터에 따라 자
 
 | 조건                                                                        | Content-Type                          | 본문                          |
 | --------------------------------------------------------------------------- | ------------------------------------- | ----------------------------- |
-| `method: "get"`                                                             | (없음)                                | URL query string              |
+| `method: "get"` (대소문자 무관)                                             | (없음)                                | URL query string              |
 | `payload` 값 중 `File`/`Blob` 인스턴스 존재                                 | `multipart/form-data` (자동)          | FormData (자동 변환)          |
 | `payload` 값 중 RN 파일 객체 (`{ uri, type, name? }`) 존재                  | `multipart/form-data` (자동)          | FormData (자동 변환)          |
 | `payload` 값 중 Node.js `Buffer` 존재                                       | `multipart/form-data` (자동)          | FormData (자동 변환)          |
@@ -385,6 +389,13 @@ try {
 ```
 
 ## 변경 이력
+
+### 0.2.9
+
+**버그 수정**
+
+- 와이어 HTTP 메서드를 대문자로 정규화 — fetch 스펙이 PATCH를 자동 대문자화 대상에서 제외해 소문자 `patch`가 그대로 전송되던 문제 수정. 일부 서버(예: Next 16 Node HTTP)가 소문자 메서드를 malformed로 간주해 빈 400으로 끊던 함정을 라이브러리 차원에서 방지
+- GET 판정 및 본문 직렬화 분기를 대소문자 무관하게 변경 — `method`를 `"GET"`(대문자)로 선언해도 정상적으로 query string 직렬화
 
 ### 0.2.8
 

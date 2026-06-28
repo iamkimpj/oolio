@@ -23,7 +23,7 @@ npm run check        # biome check --write (lint + format 통합)
 
 - **`src/index.ts`** — 진입점. `oolio(config)` 함수가 routes 트리를 순회하며 `api[category][fnName]` 형태의 호출 가능한 객체를 만들어 반환한다. 각 함수는 호출 시마다 `setRequest`로 requestFn을 생성해 실행한다.
 
-- **`src/request.ts`** — 실제 HTTP 로직. `setRequest(baseUrl, getAuthorizeToken, option?, interceptors?, fetchOptions?)`가 클로저를 반환한다. 내부 흐름: `buildRequestConfig`로 url/headers/body 직렬화 → request 인터셉터 → `doFetch` → response/retry/responseError 인터셉터. GET은 query string, binary(File/Blob) payload는 자동 multipart, 그 외는 JSON.
+- **`src/request.ts`** — 실제 HTTP 로직. `setRequest(baseUrl, getAuthorizeToken, option?, interceptors?, fetchOptions?)`가 클로저를 반환한다. 내부 흐름: `buildRequestConfig`로 url/headers/body 직렬화 → request 인터셉터 → `doFetch` → response/retry/responseError 인터셉터. GET은 query string, binary(File/Blob) payload는 자동 multipart, 그 외는 JSON. fetch에 넘기는 와이어 메서드는 `doFetch`에서 `toUpperCase()`로 정규화한다. GET 판정(`buildRequestConfig`의 query string 분기, `doFetch`의 method/body 분기)은 `method.toLowerCase() === "get"`으로 대소문자 무관하게 비교한다. PATCH는 fetch 스펙상 자동 대문자화 대상이 아니라 소문자로 나가면 일부 서버가 끊는데, 이를 방지하기 위함.
 
 **호출 시그니처 규칙**:
 - path에 `{param}` 패턴이 있으면: `fn(pathParams?, data?, options?)`

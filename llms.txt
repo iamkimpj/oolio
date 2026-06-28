@@ -29,7 +29,7 @@ const routes = {
 ```
 
 `IO<TPayload, TResponse>` 필드:
-- `method`: HTTP 메소드 (get | post | put | delete | patch)
+- `method`: HTTP 메소드 (get | post | put | delete | patch). 대소문자 무관 — GET 판정과 직렬화 분기는 내부적으로 대소문자 구분 없이 처리되고, 와이어에는 대문자로 정규화되어 전송됨 (PATCH 소문자 함정 방지)
 - `path`: 경로. `{paramName}` 패턴으로 path param 선언
 - `payload`: body(POST/PUT 등) 또는 query string(GET)에 포함할 키 목록. 명시되지 않은 키는 자동 제외됨
 - `authorization`: `"guest"` 설정 시 Bearer 토큰 미첨부

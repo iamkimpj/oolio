@@ -171,7 +171,7 @@ const buildRequestConfig = async (
 
   let body: BodyInit | undefined;
 
-  if (method === "get") {
+  if (method.toLowerCase() === "get") {
     const query = convQueryParamsForGet(payload, requestData);
     url = `${url}?${new URLSearchParams(query).toString()}`;
   } else {
@@ -218,8 +218,11 @@ const doFetch = async (config: RequestConfig): Promise<any> => {
     // fetchOptions.headers가 있으면 oolio 직렬화 헤더가 덮어쓴다.
     headers: { ...(fetchOptions?.headers as Headers | undefined), ...headers },
   };
-  if (method !== "get") {
-    init.method = method;
+  if (method.toLowerCase() !== "get") {
+    // 와이어 메서드는 대문자로 정규화한다. fetch 스펙은 PATCH를 자동 대문자화 대상에서
+    // 제외하므로 소문자 "patch"가 그대로 나가고, 일부 서버(예: Next 16 Node HTTP)는
+    // 이를 malformed로 간주해 빈 400으로 끊는다. 메서드 비교는 대소문자 무관.
+    init.method = method.toUpperCase();
     init.body = body;
   }
   const response = await fetch(url, init);
