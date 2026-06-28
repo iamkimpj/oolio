@@ -48,7 +48,30 @@ const api = oolio({
   baseUrl: "https://api.example.com",
   option: { logger: true, loggerPretty: true },  // logger: 요청/응답 콘솔 출력. loggerPretty: 객체 전체 depth 출력
   interceptors: { ... },       // 선택
+  fetchOptions: { credentials: "include" },  // 선택. 모든 요청 fetch에 적용할 init 옵션
 });
+```
+
+#### `fetchOptions` — fetch init 옵션 주입
+모든 요청의 `fetch(url, init)` 호출에 병합할 init 옵션이다. `credentials`, `mode`, `cache`,
+`signal`, `keepalive` 등을 지정한다. 쿠키 기반 인증(특히 cross-origin)에는 `credentials: "include"`가 필요하다.
+
+```ts
+const api = oolio({
+  routes, getAuthorizeToken, baseUrl,
+  fetchOptions: { credentials: "include" },
+});
+```
+
+- 호출별로 덮어쓰려면 `options.fetchOptions`를 마지막 인자로 전달한다 (per-request 우선 병합).
+- oolio가 관리하는 `method`/`body`/`headers`는 항상 최종 우선한다. 즉 `fetchOptions.headers`를 지정해도
+  직렬화 단계에서 만든 헤더(Authorization, Content-Type 등)가 같은 키를 덮어쓴다.
+- `RequestConfig.fetchOptions`로 인터셉터(`request`)에서도 읽고 변형할 수 있다.
+
+```ts
+// 호출별 override
+await api.user.me({ fetchOptions: { credentials: "same-origin" } });
+await api.user.update({ id: "1" }, { name: "John" }, { fetchOptions: { cache: "no-store" } });
 ```
 
 ### 3. 호출 시그니처 — 가장 중요
@@ -58,7 +81,7 @@ path에 `{param}` 패턴이 있는지에 따라 인자 순서가 달라진다.
 #### path params 없는 route
 ```
 fn(data?)
-fn(data?, options?)       // options = { headers?: Record<string, string> }
+fn(data?, options?)       // options = { headers?: Record<string, string>; fetchOptions?: RequestInit }
 ```
 ```ts
 await api.auth.login({ email: "a@b.com", password: "1234" });
@@ -82,8 +105,9 @@ await api.user.updateUser({ userId: "123" }, { name: "John" }, { headers: { "X-T
 ```
 
 #### options 오브젝트 감지 규칙
-마지막 인자가 `{ headers: <object> }` 키를 가지면 options로 인식한다.
-data를 생략하고 headers만 넘길 때 null을 채울 필요 없다.
+마지막 인자가 `headers` 또는 `fetchOptions` 키를 가지면 options로 인식한다.
+data를 생략하고 options만 넘길 때 null을 채울 필요 없다.
+options = `{ headers?: Record<string, string>; fetchOptions?: RequestInit }`
 
 ### 4. 본문 직렬화
 

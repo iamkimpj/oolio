@@ -1,13 +1,13 @@
 import type {
-  PathParams,
   Data,
   Headers,
-  PayloadDefinition,
   IO,
-  OolioOption,
-  OolioInterceptors,
-  RequestConfig,
   OolioError,
+  OolioInterceptors,
+  OolioOption,
+  PathParams,
+  PayloadDefinition,
+  RequestConfig,
 } from "./types";
 
 const genRequestId = (): string => Math.random().toString(36).slice(2, 8);
@@ -150,14 +150,9 @@ const buildRequestConfig = async (
   headers: Headers,
   _baseUrl: string,
   getAuthorizeToken: () => string | null,
+  fetchOptions?: RequestInit,
 ): Promise<RequestConfig> => {
-  const {
-    method,
-    path,
-    payload = [],
-    baseUrl = null,
-    authorization = null,
-  } = route;
+  const { method, path, payload = [], baseUrl = null, authorization = null } = route;
 
   let url = baseUrl ? baseUrl : _baseUrl ? _baseUrl : "http://localhost:3000";
   let requestData: Data = data || {};
@@ -212,13 +207,21 @@ const buildRequestConfig = async (
     }
   }
 
-  return { url, method, headers, body, route };
+  return { url, method, headers, body, fetchOptions, route };
 };
 
 const doFetch = async (config: RequestConfig): Promise<any> => {
-  const { url, method, headers, body } = config;
-  const init: RequestInit =
-    method === "get" ? { headers } : { method, headers, body };
+  const { url, method, headers, body, fetchOptions } = config;
+  const init: RequestInit = {
+    ...fetchOptions,
+    // oolio가 관리하는 method/headers/body는 fetchOptions보다 항상 우선.
+    // fetchOptions.headers가 있으면 oolio 직렬화 헤더가 덮어쓴다.
+    headers: { ...(fetchOptions?.headers as Headers | undefined), ...headers },
+  };
+  if (method !== "get") {
+    init.method = method;
+    init.body = body;
+  }
   const response = await fetch(url, init);
   if (!response.ok) {
     // TODO: 서버가 JSON이 아닌 응답(HTML, plain text 등)을 반환할 경우 json() 파싱 에러 발생
@@ -237,20 +240,24 @@ export default (
   getAuthorizeToken: () => string | null,
   option?: OolioOption,
   interceptors?: OolioInterceptors,
+  fetchOptions?: RequestInit,
 ) => {
   return async (
     route: IO,
     pathParams: PathParams = {},
     data: Data | null = null,
     headers: Headers = {},
+    perRequestFetchOptions?: RequestInit,
   ): Promise<any> => {
+    const mergedFetchOptions: RequestInit | undefined =
+      fetchOptions || perRequestFetchOptions
+        ? { ...fetchOptions, ...perRequestFetchOptions }
+        : undefined;
     const log = option?.logger === true;
     const pretty = log && option?.loggerPretty === true;
     const fmt = (...args: unknown[]) =>
       pretty
-        ? args.map((a) =>
-            typeof a === "object" && a !== null ? JSON.stringify(a, null, 2) : a,
-          )
+        ? args.map((a) => (typeof a === "object" && a !== null ? JSON.stringify(a, null, 2) : a))
         : args;
     const reqId = log ? genRequestId() : "";
     const tag = `[oolio]:${reqId}`;
@@ -263,6 +270,7 @@ export default (
       headers,
       _baseUrl,
       getAuthorizeToken,
+      mergedFetchOptions,
     );
 
     if (interceptors?.request) {
@@ -270,11 +278,13 @@ export default (
     }
 
     if (log) {
-      console.log(...fmt(`${tag} →`, route, {
-        pathParams,
-        data,
-        headers: maskAuthorization(config.headers),
-      }));
+      console.log(
+        ...fmt(`${tag} →`, route, {
+          pathParams,
+          data,
+          headers: maskAuthorization(config.headers),
+        }),
+      );
       console.log(`${tag} →`, config.method.toUpperCase(), config.url);
     }
 
@@ -300,11 +310,7 @@ export default (
       } catch (err) {
         attempt++;
         if (interceptors?.retry) {
-          const shouldRetry = await interceptors.retry(
-            err as OolioError,
-            config,
-            attempt,
-          );
+          const shouldRetry = await interceptors.retry(err as OolioError, config, attempt);
           if (shouldRetry) {
             if (log) {
               console.log(
@@ -318,10 +324,7 @@ export default (
           }
         }
         if (interceptors?.responseError) {
-          const handled = await interceptors.responseError(
-            err as OolioError,
-            config,
-          );
+          const handled = await interceptors.responseError(err as OolioError, config);
           if (log) {
             console.log(
               ...fmt(
