@@ -17,6 +17,7 @@ npm install oolio
 - 통일된 에러 처리 형식
 - 브라우저 / Node.js / React Native 환경 모두 지원
 - TypeScript 제네릭으로 요청/응답 타입 정의 가능
+- `fetchOptions`로 fetch init 옵션 주입 (`credentials`, `mode`, `cache`, `signal` 등) — 쿠키 인증 지원
 
 ## 사용법
 
@@ -253,6 +254,43 @@ axios의 동작과 유사하게, 메소드와 호출 시 데이터에 따라 자
 - **사용자가 `headers["Content-Type"]`을 직접 지정한 경우 항상 그 값을 우선합니다** — 자동 분기로 multipart가 되는 경우에도 `delete`하지 않고 사용자가 지정한 값을 그대로 보냅니다 (단, `multipart/form-data`로 임의 지정 시 boundary는 사용자 책임).
 - `payload`에 명시되지 않은 키는 자동 감지 대상에서 제외되어 잘려나갑니다 (협업 누락 방지를 위한 의도적 동작).
 
+## fetch 옵션 (`fetchOptions`)
+
+`oolio({ ..., fetchOptions })`에 전달하면 모든 요청의 `fetch(url, init)` 호출에 병합되는 init 옵션입니다. `credentials`, `mode`, `cache`, `signal`, `keepalive` 등 표준 `RequestInit` 필드를 지정할 수 있습니다.
+
+쿠키 기반 인증(특히 cross-origin)에는 `credentials: "include"`가 필요합니다. 지정하지 않으면 fetch 기본값(`same-origin`)이 적용됩니다.
+
+```javascript
+const api = oolio({
+  routes,
+  getAuthorizeToken: () => localStorage.getItem("token"),
+  baseUrl: "https://api.example.com",
+  fetchOptions: { credentials: "include" }, // 모든 요청에 쿠키 동봉
+});
+```
+
+- **호출별 오버라이드**: 마지막 인자로 `{ fetchOptions }`를 전달하면 해당 요청에만 적용됩니다. 클라이언트 레벨 `fetchOptions`와 얕은 병합되며 호출별 값이 우선합니다.
+- **우선순위**: oolio가 관리하는 `method`/`body`/`headers`는 항상 최종 우선합니다. `fetchOptions.headers`를 지정해도 직렬화 단계에서 만든 헤더(`Authorization`, `Content-Type` 등)가 같은 키를 덮어씁니다.
+- **인터셉터 노출**: 병합된 값은 `RequestConfig.fetchOptions`로 들어가 `request` 인터셉터에서 읽고 변형할 수 있습니다.
+
+```javascript
+// 이 호출만 same-origin으로 (클라이언트 기본 include를 덮어씀)
+await api.user.getProfile({ fetchOptions: { credentials: "same-origin" } });
+
+// pathParams + data + fetchOptions
+await api.user.updateUserById(
+  { userId: "123" },
+  { name: "John", email: "john@example.com" },
+  { fetchOptions: { cache: "no-store" } },
+);
+
+// headers와 함께 사용
+await api.user.getProfile({
+  headers: { "X-Trace-Id": "abc" },
+  fetchOptions: { credentials: "include" },
+});
+```
+
 ## 인터셉터
 
 `oolio({ ..., interceptors })`에 전달하는 훅. 한 번 등록하면 모든 요청에 자동 적용됩니다.
@@ -298,7 +336,7 @@ const api = oolio({
 
 ## per-request 옵션
 
-각 API 호출의 **마지막 인자**로 `{ headers?: Record<string, string> }` 오브젝트를 전달하면 해당 요청에만 적용됩니다. 글로벌 인터셉터로 처리하기 어려운 요청별 헤더에 사용합니다.
+각 API 호출의 **마지막 인자**로 `{ headers?: Record<string, string>; fetchOptions?: RequestInit }` 오브젝트를 전달하면 해당 요청에만 적용됩니다. 글로벌 인터셉터로 처리하기 어려운 요청별 헤더나 fetch 옵션에 사용합니다.
 
 ```javascript
 // path params 없는 route — data 없이 headers만
@@ -318,13 +356,18 @@ api.user.updateUserById(
 );
 ```
 
-`{ headers }` 키를 가진 오브젝트를 마지막 인자로 넣으면 options로 인식합니다. data를 생략하고 싶다면 null 없이 바로 붙이면 됩니다.
+`headers` 또는 `fetchOptions` 키를 가진 오브젝트를 마지막 인자로 넣으면 options로 인식합니다. data를 생략하고 싶다면 null 없이 바로 붙이면 됩니다.
 
 ```javascript
 // path params 있는 route — data 생략
 // { headers } 키가 있으므로 options로 자동 인식
 api.user.getUserById({ userId: "123" }, { headers: { "X-Custom": "test" } });
+
+// fetchOptions만 단독으로 넘겨도 options로 인식
+api.user.getProfile({ fetchOptions: { credentials: "include" } });
 ```
+
+> fetch 옵션 주입에 대한 자세한 내용은 [fetch 옵션 (`fetchOptions`)](#fetch-옵션-fetchoptions) 섹션을 참고하세요.
 
 ## 에러 처리
 
@@ -342,6 +385,15 @@ try {
 ```
 
 ## 변경 이력
+
+### 0.2.8
+
+**신규 기능**
+
+- `OolioConfig.fetchOptions` 추가 — 모든 요청의 `fetch` 호출에 병합할 init 옵션(`credentials`, `mode`, `cache`, `signal` 등) 주입. 쿠키 기반 인증(특히 cross-origin)을 위한 `credentials: "include"` 지원
+- per-request `options.fetchOptions` 추가 — 호출별로 fetch 옵션 오버라이드 (클라이언트 레벨과 얕은 병합, 호출별 우선)
+- 마지막 인자에 `fetchOptions` 키만 있어도 per-request options로 자동 인식 (기존 `headers` 키와 동일하게 동작)
+- 병합된 fetch 옵션은 `RequestConfig.fetchOptions`로 노출되어 `request` 인터셉터에서 변형 가능. oolio가 관리하는 `method`/`body`/`headers`는 항상 최종 우선
 
 ### 0.2.7
 

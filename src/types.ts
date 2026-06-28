@@ -18,10 +18,7 @@ export type ResponseData = any;
  * { method: "get", path: "/user/{userId}" } as IO<{ userId: string }, User>
  * { method: "post", path: "/auth/login", payload: ["email", "password"] } as IO<LoginInput, { token: string }>
  */
-export interface IO<
-  _RequestPayload = RequestPayload,
-  _ResponseData = ResponseData,
-> {
+export interface IO<_RequestPayload = RequestPayload, _ResponseData = ResponseData> {
   /** HTTP 메소드 (get | post | put | delete | patch) */
   method: string;
   /** 경로. path param은 {paramName} 형식으로 선언 */
@@ -71,6 +68,11 @@ export interface OolioOption {
  */
 export interface RequestOptions {
   headers?: Headers;
+  /**
+   * 이 호출에만 적용할 fetch init 옵션. 클라이언트 레벨 `fetchOptions`와 병합되며
+   * (per-request 우선), oolio가 관리하는 `method`/`body`/`headers`가 항상 최종 우선한다.
+   */
+  fetchOptions?: RequestInit;
 }
 
 export interface RequestConfig {
@@ -78,6 +80,12 @@ export interface RequestConfig {
   method: string;
   headers: Headers;
   body?: BodyInit;
+  /**
+   * fetch에 전달될 추가 init 옵션 (credentials, mode, cache, signal 등).
+   * 인터셉터에서 변형 가능. `method`/`headers`/`body`는 oolio가 관리하므로
+   * 여기에 지정해도 doFetch에서 위 필드가 우선한다.
+   */
+  fetchOptions?: RequestInit;
   route: IO;
 }
 
@@ -90,15 +98,8 @@ export interface OolioError {
 export interface OolioInterceptors {
   request?: (config: RequestConfig) => RequestConfig | Promise<RequestConfig>;
   response?: (data: any, config: RequestConfig) => any | Promise<any>;
-  responseError?: (
-    error: OolioError,
-    config: RequestConfig,
-  ) => any | Promise<any>;
-  retry?: (
-    error: OolioError,
-    config: RequestConfig,
-    attempt: number,
-  ) => boolean | Promise<boolean>;
+  responseError?: (error: OolioError, config: RequestConfig) => any | Promise<any>;
+  retry?: (error: OolioError, config: RequestConfig, attempt: number) => boolean | Promise<boolean>;
 }
 
 export interface OolioConfig<TRoutes extends Routes = Routes> {
@@ -107,4 +108,10 @@ export interface OolioConfig<TRoutes extends Routes = Routes> {
   baseUrl: string;
   option?: OolioOption;
   interceptors?: OolioInterceptors;
+  /**
+   * 모든 요청의 fetch 호출에 적용할 기본 init 옵션 (credentials, mode, cache 등).
+   * cross-origin 쿠키 인증이 필요하면 `{ credentials: "include" }`를 지정한다.
+   * 호출별 `options.fetchOptions`로 덮어쓸 수 있다.
+   */
+  fetchOptions?: RequestInit;
 }
